@@ -657,7 +657,7 @@ void httpdPlatTimerDelete(HttpdPlatTimerHandle handle)
 HttpdPlatTimerHandle httpdPlatTimerCreate(const char *name, int periodMs, int autoreload, void (*callback)(void *arg), void *ctx)
 {
     HttpdPlatTimerHandle ret;
-#ifdef ESP32
+#if defined(ESP32) || defined(ESP8266)
     ret=xTimerCreate(name, pdMS_TO_TICKS(periodMs), autoreload?pdTRUE:pdFALSE, ctx, callback);
 #else
     ret=xTimerCreate((const signed char * const)name, (periodMs / portTICK_PERIOD_MS), autoreload?pdTRUE:pdFALSE, ctx, callback);
@@ -825,7 +825,7 @@ HttpdStartStatus ICACHE_FLASH_ATTR httpdFreertosStart(HttpdFreertosInstance *pIn
     pthread_t thread;
     pthread_create(&thread, NULL, platHttpServerTask, pInstance);
 #else
-#ifdef ESP32
+#if defined(ESP32) || defined(ESP8266)
 #ifndef CONFIG_ESPHTTPD_PROC_CORE
 #define CONFIG_ESPHTTPD_PROC_CORE   tskNO_AFFINITY
 #endif

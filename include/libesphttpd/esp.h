@@ -1,8 +1,11 @@
 // Combined include file for esp8266 and esp32
 
-#ifdef ESP_PLATFORM //only set in esp-idf
+//TODO
+#define ESP8266
+//#define ESP32
+
+#ifdef ESP_PLATFORM
 #define FREERTOS 1
-#define ESP32 1
 
 #include "sdkconfig.h"
 #define HTTPD_STACKSIZE CONFIG_ESPHTTPD_STACK_SIZE
@@ -27,13 +30,9 @@ typedef int32_t int32;
 
 #ifdef FREERTOS
 #include <stdint.h>
-#ifdef ESP32
 #include "esp_types.h"
 #include "esp_attr.h"
 #include "esp_spi_flash.h"
-#else
-#include <espressif/esp_common.h>
-#endif
 
 #else
 #include <c_types.h>

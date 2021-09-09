@@ -12,7 +12,7 @@ Some flash handling cgi routines. Used for updating the ESPFS/OTA image.
 #include "cJSON.h"
 
 #include "httpd-platform.h"
-#ifdef ESP32
+#if defined(ESP32) || defined(ESP8266)
 #include "esp32_flash.h"
 #include "esp_ota_ops.h"
 #include "esp_log.h"
@@ -630,9 +630,11 @@ static int check_partition_valid_app(const esp_partition_t *partition)
         .offset = partition->address,
         .size = partition->size,
     };
+#ifdef ESP32
 	if (esp_image_verify(ESP_IMAGE_VERIFY_SILENT, &part_pos, &data) != ESP_OK) {
         return 0;  // partition does not hold a valid app
     }
+#endif
     return 1; // App in partition is valid
 }
 

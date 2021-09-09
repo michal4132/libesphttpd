@@ -3,7 +3,7 @@
 #include "httpd.h"
 
 #ifdef FREERTOS
-#ifdef ESP32
+#if defined(ESP8266) || defined(ESP32)
 #include "lwip/sockets.h"
 #else
 #include "lwip/lwip/sockets.h"

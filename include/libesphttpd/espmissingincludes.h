@@ -2,7 +2,7 @@
 #define ESPMISSINGINCLUDES_H
 
 #include <stdint.h>
-#ifndef ESP32
+#if !(defined(ESP32) || defined(ESP8266))
 #include <c_types.h>
 #endif
 

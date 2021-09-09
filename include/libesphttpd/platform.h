@@ -4,7 +4,7 @@
 #ifdef FREERTOS
 #include <libesphttpd/esp.h>
 
-#ifdef ESP32
+#if defined(ESP32) || defined(ESP8266)
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 #else
@@ -16,7 +16,7 @@
 typedef struct RtosConnType RtosConnType;
 typedef RtosConnType* ConnTypePtr;
 
-#ifdef ESP32
+#if defined(ESP32) || defined(ESP8266)
 // freertos v8 api
 typedef TimerHandle_t HttpdPlatTimerHandle;
 #else

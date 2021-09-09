@@ -10,7 +10,7 @@ Cgi/template routines for the /wifi url.
 #include <libesphttpd/esp.h>
 #include "libesphttpd/cgiwifi.h"
 
-#if !defined(ESP32)
+#if !(defined(ESP32) || defined(ESP8266))
 
 #define SSID_SIZE	32
 #define BSSID_SIZE	6

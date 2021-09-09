@@ -33,7 +33,7 @@ static const char *TAG = "ota";
 // Check that the header of the firmware blob looks like actual firmware...
 static int ICACHE_FLASH_ATTR checkBinHeader(void *buf) {
 	uint8_t *cd = (uint8_t *)buf;
-#ifdef ESP32
+#if defined(ESP32) || defined(ESP8266)
 	printf("checkBinHeader: %x %x %x\n", cd[0], ((uint16_t *)buf)[3], ((uint32_t *)buf)[0x6]);
 	if (cd[0] != 0xE9) return 0;
 	if (((uint16_t *)buf)[3] != 0x4008) return 0;
@@ -60,7 +60,7 @@ CgiStatus ICACHE_FLASH_ATTR cgiGetFirmwareNext(HttpdConnData *connData) {
 		//Connection aborted. Clean up.
 		return HTTPD_CGI_DONE;
 	}
-#ifdef ESP32
+#if defined(ESP32) || defined(ESP8266)
 	//Doesn't matter, we have a MMU to remap memory, so we only have one firmware image.
 	uint8_t id = 0;
 #else
@@ -93,7 +93,7 @@ CgiStatus ICACHE_FLASH_ATTR cgiGetFirmwareNext(HttpdConnData *connData) {
 
 #define FLST_START 0
 #define FLST_WRITE 1
-#ifndef ESP32
+#if !(defined(ESP32) || defined(ESP8266))
 #define FLST_SKIP 2
 #endif
 #define FLST_DONE 3
@@ -103,7 +103,7 @@ CgiStatus ICACHE_FLASH_ATTR cgiGetFirmwareNext(HttpdConnData *connData) {
 #define FILETYPE_FLASH 1
 #define FILETYPE_OTA 2
 typedef struct {
-#ifdef ESP32
+#if defined(ESP32) || defined(ESP8266)
 	esp_ota_handle_t update_handle;
 	const esp_partition_t *update_partition;
 	const esp_partition_t *configured;
@@ -113,7 +113,7 @@ typedef struct {
 	int filetype;
 	int flashPos;
 	char pageData[PAGELEN];
-#ifndef ESP32
+#if !(defined(ESP32) || defined(ESP8266))
 	int pagePos;
 #endif
 	int address;
@@ -122,7 +122,7 @@ typedef struct {
 	const char *err;
 } UploadState;
 
-#ifndef ESP32
+#if !(defined(ESP32) || defined(ESP8266))
 typedef struct __attribute__((packed)) {
 	char magic[4];
 	char tag[28];
@@ -150,7 +150,7 @@ static void cgiJsonResponseCommon(HttpdConnData *connData, cJSON *jsroot){
     cJSON_Delete(jsroot);
 }
 
-#ifdef ESP32
+#if defined(ESP32) || defined(ESP8266)
 CgiStatus ICACHE_FLASH_ATTR cgiUploadFirmware(HttpdConnData *connData) {
 	CgiUploadFlashDef *def=(CgiUploadFlashDef*)connData->cgiArg;
 	UploadState *state=(UploadState *)connData->cgiData;
@@ -516,7 +516,7 @@ CgiStatus ICACHE_FLASH_ATTR cgiUploadFirmware(HttpdConnData *connData) {
 static HttpdPlatTimerHandle resetTimer;
 
 static void ICACHE_FLASH_ATTR resetTimerCb(void *arg) {
-#ifndef ESP32
+#if !(defined(ESP32) || defined(ESP8266))
 	system_upgrade_flag_set(UPGRADE_FLAG_FINISH);
 	system_upgrade_reboot();
 #else
@@ -630,7 +630,9 @@ static int check_partition_valid_app(const esp_partition_t *partition)
         .offset = partition->address,
         .size = partition->size,
     };
-#ifdef ESP32
+#if defined(ESP32)
+//TODO
+//#if defined(ESP32) || defined(ESP8266)
 	if (esp_image_verify(ESP_IMAGE_VERIFY_SILENT, &part_pos, &data) != ESP_OK) {
         return 0;  // partition does not hold a valid app
     }

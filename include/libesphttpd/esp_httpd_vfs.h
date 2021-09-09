@@ -3,6 +3,12 @@
 
 #include "httpd.h"
 
+//Set VFS base path
+//If you get mkdir error, set this
+//Usage:
+//     cgiEspVfsBasePath("/spiffs")
+bool cgiEspVfsBasePath(const char *bp);
+
 //This is a catch-all cgi function. It takes the url passed to it, looks up the corresponding
 //path in the filesystem and if it exists, passes the file through. This simulates what a normal
 //webserver would do with static files.

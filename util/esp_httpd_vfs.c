@@ -22,6 +22,9 @@ Connector to let httpd use the vfs filesystem to serve the files in it.
 
 #define ESPFS_MAGIC (0x73665345)
 #define ESPFS_FLAG_GZIP (1<<1)
+#define BASE_PATH_MAX_LENGTH 16
+
+char base_path[BASE_PATH_MAX_LENGTH];
 
 // If the client does not advertise that he accepts GZIP send following warning message (telnet users for e.g.)
 static const char *gzipNonSupportedMessage = "HTTP/1.0 501 Not implemented\r\nServer: esp8266-httpd/"HTTPDVER"\r\nConnection: close\r\nContent-Type: text/plain\r\nContent-Length: 52\r\n\r\nYour browser does not accept gzip-compressed data.\r\n";
@@ -41,6 +44,8 @@ static void cgiJsonResponseCommon(HttpdConnData *connData, cJSON *jsroot){
     {
     	httpdSend(connData, json_string, -1);
         cJSON_free(json_string);
+    }else{
+      printf("dupa12\n");
     }
     cJSON_Delete(jsroot);
 }
@@ -361,6 +366,22 @@ static esp_err_t createMissingDirectories(char *fullpath) {
 	tofree = string = strndup(fullpath, MAX_FILENAME_LENGTH); // make a copy because modifies input
 	assert(string != NULL);
 
+
+        // don't make dir if base_path
+        if(strlen(base_path) > 1){
+          bool is_base_path = true;
+          for(int i = 0; i < strlen(base_path); ++i){
+            if(string[i] != base_path[i]){
+              is_base_path = false;
+            }
+          }
+          if(is_base_path){
+            free(tofree);
+            return err;
+          }
+        }
+
+
 	int i;
 	for(i=0; string[i] != '\0'; i++) // search over all chars in fullpath
 	{
@@ -401,6 +422,14 @@ typedef struct {
 	int b_written;
 	const char *errtxt;
 } UploadState;
+
+bool cgiEspVfsBasePath(const char *bp){
+  if(strlen(bp) < BASE_PATH_MAX_LENGTH){
+    strcpy(base_path, bp);
+    return true;
+  }
+  return false;
+}
 
 CgiStatus   cgiEspVfsUpload(HttpdConnData *connData) {
 	UploadState *state=(UploadState *)connData->cgiData;

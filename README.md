@@ -1,10 +1,14 @@
 # Libesphttpd intro
-&#x1F53A; Warning: The build is currently broken for ESP8266.  This fork does not currently support ESP8266 since we don't have a maintainer who is using that chip.
 
 Libesphttpd is a HTTP server library for the ESP8266/ESP32. It supports integration in projects
 running under the non-os and FreeRTOS-based SDK. Its core is clean and small, but it provides an
 extensible architecture with plugins to handle a flash-based compressed read-only filesystem
 for static files, a tiny template engine, websockets, a captive portal, and more.
+
+# TODO
+-fix ESP8266 OTA
+
+-fix ESP8266 WIFI Functions
 
 # Examples
 
@@ -13,7 +17,7 @@ as well as a [FreeRTOS-based](https://github.com/chmorgan/esphttpd-freertos) exa
 how to use libesphttpd to serve files from an ESP8266/ESP32 and illustrate a way to make an user associate
 the ESP8266/ESP32 with an access point from a standard webbrowser on a PC or mobile phone.
 
-# Using with esp-idf (esp32)
+# Using with esp-idf (esp32) and ESP8266_RTOS_SDK (esp8266)
 
 Place the libesphttpd repository into the components directory of your esp-idf folder. This should
 put it at esp-idf/components/libesphttpd If it is in the correct location you should see a 'ESP-HTTPD Config'

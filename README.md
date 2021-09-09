@@ -7,6 +7,7 @@ for static files, a tiny template engine, websockets, a captive portal, and more
 
 # TODO
 -fix ESP8266 OTA
+
 -fix ESP8266 WIFI Functions
 
 # Examples

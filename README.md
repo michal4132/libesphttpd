@@ -5,6 +5,10 @@ running under the non-os and FreeRTOS-based SDK. Its core is clean and small, bu
 extensible architecture with plugins to handle a flash-based compressed read-only filesystem
 for static files, a tiny template engine, websockets, a captive portal, and more.
 
+# TODO
+-fix ESP8266 OTA
+-fix ESP8266 WIFI Functions
+
 # Examples
 
 There are two example projects that integrate this code, both a [non-os](http://git.spritesserver.nl/esphttpd.git/)

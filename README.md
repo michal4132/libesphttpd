@@ -1,12 +1,13 @@
-# Libesphttpd intro
+# Libesphttpd
 
 Libesphttpd is a HTTP server library for the ESP8266/ESP32. It supports integration in projects
 running under the non-os and FreeRTOS-based SDK. Its core is clean and small, but it provides an
 extensible architecture with plugins to handle a flash-based compressed read-only filesystem
 for static files, a tiny template engine, websockets, a captive portal, and more.
 
-# TODO
--fix ESP8266 WIFI Functions
+# FORK
+
+This fork aims to bring support ESP8266. 
 
 
 # Examples

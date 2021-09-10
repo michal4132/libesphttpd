@@ -186,7 +186,7 @@ CgiStatus ICACHE_FLASH_ATTR cgiWebSocketRecv(HttpdInstance *pInstance, HttpdConn
 	int wasHeaderByte;
 	Websock *ws=(Websock*)connData->cgiData;
 	for (i=0; i<len; i++) {
-//		httpd_printf("Ws: State %d byte 0x%02X\n", ws->priv->wsStatus, data[i]);
+//		printf("Ws: State %d byte 0x%02X\n", ws->priv->wsStatus, data[i]);
 		wasHeaderByte=1;
 		if (ws->priv->wsStatus==ST_FLAGS) {
 			ws->priv->maskCtr=0;

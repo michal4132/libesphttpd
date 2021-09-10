@@ -8,7 +8,6 @@ for static files, a tiny template engine, websockets, a captive portal, and more
 # TODO
 -fix ESP8266 WIFI Functions
 
--check is ESP32 still works
 
 # Examples
 

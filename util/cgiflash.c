@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /*
-Some flash handling cgi routines. Used for updating the ESPFS/OTA image.
+Some flash handling cgi routines. Used for updating the OTA image.
 */
 
 #include <libesphttpd/esp.h>
@@ -12,8 +12,9 @@ Some flash handling cgi routines. Used for updating the ESPFS/OTA image.
 #include "cJSON.h"
 
 #include "httpd-platform.h"
-#if defined(ESP32) || defined(ESP8266)
+#if defined(ESP32)
 #include "esp32_flash.h"
+#endif
 
 #include "esp_system.h"
 #include "esp_ota_ops.h"
@@ -22,7 +23,6 @@ Some flash handling cgi routines. Used for updating the ESPFS/OTA image.
 #include "esp_image_format.h"
 
 static const char *TAG = "ota";
-#endif
 
 #ifndef UPGRADE_FLAG_FINISH
 #define UPGRADE_FLAG_FINISH     0x02
@@ -35,19 +35,16 @@ static const char *TAG = "ota";
 // Check that the header of the firmware blob looks like actual firmware...
 static int ICACHE_FLASH_ATTR checkBinHeader(void *buf) {
 	uint8_t *cd = (uint8_t *)buf;
-#if defined(ESP32) || defined(ESP8266)
 	printf("checkBinHeader: %x %x %x\n", cd[0], ((uint16_t *)buf)[3], ((uint32_t *)buf)[0x6]);
 	if (cd[0] != 0xE9) return 0;
-        return 1; //TODO FIX CHECK
+#if defined(ESP32)
 	if (((uint16_t *)buf)[3] != 0x4008) return 0;
+#endif
+#if defined(ESP8266)
+  if (((uint16_t *)buf)[3] != 0x4021) return 0;
+#endif
 	uint32_t a=((uint32_t *)buf)[0x6];
 	if (a!=0 && (a<=0x3F000000 || a>0x40400000)) return 0;
-#else
-	if (cd[0] != 0xEA) return 0;
-	if (cd[1] != 4 || cd[2] > 3 || cd[3] > 0x40) return 0;
-	if (((uint16_t *)buf)[3] != 0x4010) return 0;
-	if (((uint32_t *)buf)[2] != 0) return 0;
-#endif
 	return 1;
 }
 
@@ -70,7 +67,6 @@ CgiStatus ICACHE_FLASH_ATTR cgiGetFirmwareNext(HttpdConnData *connData) {
 	return HTTPD_CGI_DONE;
 }
 
-
 //Cgi that allows the firmware to be replaced via http POST This takes
 //a direct POST from e.g. Curl or a Javascript AJAX call with either the
 //firmware given by cgiGetFirmwareNext or an OTA upgrade image.
@@ -79,11 +75,7 @@ CgiStatus ICACHE_FLASH_ATTR cgiGetFirmwareNext(HttpdConnData *connData) {
 //have to buffer some data because the post buffer may be misaligned, we
 //write SPI data in pages. The page size is a software thing, not
 //a hardware one.
-#if defined(ESP32) || defined(ESP8266)
 #define PAGELEN 4096
-#else
-#define PAGELEN 64
-#endif
 
 #define FLST_START 0
 #define FLST_WRITE 1
@@ -94,12 +86,10 @@ CgiStatus ICACHE_FLASH_ATTR cgiGetFirmwareNext(HttpdConnData *connData) {
 #define FILETYPE_FLASH 1
 #define FILETYPE_OTA 2
 typedef struct {
-#if defined(ESP32) || defined(ESP8266)
 	esp_ota_handle_t update_handle;
 	const esp_partition_t *update_partition;
 	const esp_partition_t *configured;
 	const esp_partition_t *running;
-#endif
 	int state;
 	int filetype;
 	int flashPos;

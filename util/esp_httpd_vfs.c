@@ -40,12 +40,9 @@ static void cgiJsonResponseCommon(HttpdConnData *connData, cJSON *jsroot){
 	httpdHeader(connData, "Content-Type", "application/json; charset=utf-8"); //We are going to send some JSON.
 	httpdEndHeaders(connData);
 	json_string = cJSON_Print(jsroot);
-    if (json_string)
-    {
+    if (json_string){
     	httpdSend(connData, json_string, -1);
-        cJSON_free(json_string);
-    }else{
-      printf("dupa12\n");
+      cJSON_free(json_string);
     }
     cJSON_Delete(jsroot);
 }
@@ -101,7 +98,7 @@ CgiStatus ICACHE_FLASH_ATTR cgiEspVfsGet(HttpdConnData *connData) {
 	char acceptEncodingBuffer[64];
 	int isGzip;
 	bool isIndex = false;
-	struct stat filestat;	
+	struct stat filestat;
 
 	if (connData->isConnectionClosed) {
 		//Connection aborted. Clean up.
@@ -121,7 +118,7 @@ CgiStatus ICACHE_FLASH_ATTR cgiEspVfsGet(HttpdConnData *connData) {
 		}
 
 		getFilepath(connData, filename, sizeof(filename));
-		
+
 		if(filename[strlen(filename)-1]=='/') filename[strlen(filename)-1]='\0';
 		if(stat(filename, &filestat) == 0) {
 			if((isIndex = S_ISDIR(filestat.st_mode))) {
@@ -136,20 +133,20 @@ CgiStatus ICACHE_FLASH_ATTR cgiEspVfsGet(HttpdConnData *connData) {
 			isGzip = (st.st_spare4[0] == ESPFS_MAGIC && st.st_spare4[1] & ESPFS_FLAG_GZIP);
 			ESP_LOGD(__func__, "fopen: %s, r", filename);
 		}
-		
+
 		if (file==NULL) {
 			// Check if requested file is available GZIP compressed ie. with file extension .gz
-		
+
 			strncat(filename, ".gz", MAX_FILENAME_LENGTH - strlen(filename));
 			ESP_LOGD(__func__, "GET: GZIPped file - %s", filename);
 			file = fopen(filename, "r");
 			if (file != NULL) ESP_LOGD(__func__, "fopen: %s, r", filename);
 			isGzip = 1;
-			
+
 			if (file==NULL) {
 				return HTTPD_CGI_NOTFOUND;
-			}				
-		
+			}
+
 			// Check the browser's "Accept-Encoding" header. If the client does not
 			// advertise that he accepts GZIP send a warning message (telnet users for e.g.)
 			httpdGetHeader(connData, "Accept-Encoding", acceptEncodingBuffer, 64);
@@ -433,7 +430,7 @@ bool cgiEspVfsBasePath(const char *bp){
 
 CgiStatus   cgiEspVfsUpload(HttpdConnData *connData) {
 	UploadState *state=(UploadState *)connData->cgiData;
-    
+
 	if (connData->isConnectionClosed) {
 		//Connection aborted. Clean up.
 		if (state != NULL)

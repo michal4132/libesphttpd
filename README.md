@@ -7,7 +7,7 @@ for static files, a tiny template engine, websockets, a captive portal, and more
 
 # FORK
 
-This fork aims to bring support ESP8266. 
+This fork aims to bring support for ESP8266. 
 
 
 # Examples

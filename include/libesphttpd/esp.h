@@ -1,11 +1,11 @@
 // Combined include file for esp8266 and esp32
 
 #ifdef CONFIG_IDF_TARGET_ESP32
-#define ESP32
+#define ESP32 1
 #endif
 
 #ifdef CONFIG_IDF_TARGET_ESP8266
-#define ESP8266
+#define ESP8266 1
 #endif
 
 #ifdef ESP_PLATFORM

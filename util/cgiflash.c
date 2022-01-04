@@ -120,7 +120,6 @@ static void cgiJsonResponseCommon(HttpdConnData *connData, cJSON *jsroot){
 }
 
 CgiStatus ICACHE_FLASH_ATTR cgiUploadFirmware(HttpdConnData *connData) {
-	CgiUploadFlashDef *def=(CgiUploadFlashDef*)connData->cgiArg;
 	UploadState *state=(UploadState *)connData->cgiData;
 	esp_err_t err;
 
@@ -192,7 +191,7 @@ CgiStatus ICACHE_FLASH_ATTR cgiUploadFirmware(HttpdConnData *connData) {
 	while (dataLen!=0) {
 		if (state->state==FLST_START) {
 			//First call. Assume the header of whatever we're uploading already is in the POST buffer.
-			if (def->type==CGIFLASH_TYPE_FW && checkBinHeader(connData->post.buff)) {
+			if(checkBinHeader(connData->post.buff)){
 			    if (state->update_partition == NULL)
 			    {
 					ESP_LOGE(TAG, "update_partition not found!");

@@ -1,21 +1,11 @@
 # Libesphttpd
 
 Libesphttpd is a HTTP server library for the ESP8266/ESP32. It supports integration in projects
-running under the non-os and FreeRTOS-based SDK. Its core is clean and small, but it provides an
-extensible architecture with plugins to handle a flash-based compressed read-only filesystem
-for static files, a tiny template engine, websockets, a captive portal, and more.
-
-# FORK
-
-This fork aims to bring support for ESP8266. 
-
+running FreeRTOS-based SDK. Its core is clean and small.
 
 # Examples
 
-There are two example projects that integrate this code, both a [non-os](http://git.spritesserver.nl/esphttpd.git/)
-as well as a [FreeRTOS-based](https://github.com/chmorgan/esphttpd-freertos) example. They show
-how to use libesphttpd to serve files from an ESP8266/ESP32 and illustrate a way to make an user associate
-the ESP8266/ESP32 with an access point from a standard webbrowser on a PC or mobile phone.
+Example project that integrate this code [esp_smart_led](https://github.com/michal4132/esp_smart_led).
 
 # Using with esp-idf (esp32) and ESP8266_RTOS_SDK (esp8266)
 
@@ -99,38 +89,11 @@ all browsers requesting /google to the website of the search giant.
 If the host as requested by the browser isn't the hostname in the argument, the webserver will do a redirect
 to the host instead. If the hostname does match, it will pass on the request.
 
-* __cgiRedirectApClientToHostname__ (arg: hostname to redirect to)
-This does the same as `cgiRedirectToHostname` but only to clients connected to the SoftAP of the
-ESP8266/ESP32. This and the former function are used with the captive portal mode. The captive portal consists
-of a DNS-server (started by calling `captdnsInit()`) resolving all hostnames into the IP of the
-ESP8266/ESP32. These redirect functions can then be used to further redirect the client to the hostname of 
-the ESP8266/ESP32.
-
 * Flash updating functions (OTA) - see [README-flash_api](./README-flash_api.md)
-
-* __cgiWiFi* functions__ (arg: various)
-These are used to change WiFi mode, scan for access points, associate to an access point etcetera. See
-the example projects for an implementation that uses this function call.  [FreeRTOS Example](https://github.com/chmorgan/esphttpd-freertos)
 
 * __cgiWebsocket__ (arg: connect function)
 This CGI is used to set up a websocket. Websockets are described later in this document.  See
 the example projects for an implementation that uses this function call.  [FreeRTOS Example](https://github.com/chmorgan/esphttpd-freertos)
-
-* __cgiEspFsHook__ (arg1: basepath or &httpdCgiEx magic, arg2:HttpdCgiExArg struct if arg1 was &httpdCgiEx)
-Serves files from the espfs filesystem. The espFsInit function should be called first, with as argument
-a pointer to the start of the espfs binary data in flash. The binary data can be both flashed separately
-to a free bit of SPI flash, as well as linked in with the binary. The nonos example project can be
-configured to do either.
-
-  If arg1 is supplied &httpdCgiEx Magic value, then arg2 is assumed to be of type HttpdCgiExArg, which is a stuct containing extended options.  This should allow for future addition of custom parameters without breaking existing cgi functions that make use of existing members of this struct.
-  Currently available options are: 
-   - basepath: base directory path on filesystem  (Optional, uses URL if NULL)
-   - headerCb: pointer to function which supplies custom headers.  (Optional, sends default headers if NULL)
-   - mimetype: customize the MIMETYPE  (Optional, sends default MIMETYPE if NULL)
-
-* __cgiEspFsTemplate__ (arg: template function)
-The espfs code comes with a small but efficient template routine, which can fill a template file stored on
-the espfs filesystem with user-defined data.
 
 * __cgiEspVfsGet__ (arg1: basepath or &httpdCgiEx magic, arg2:HttpdCgiExArg struct if arg1 was &httpdCgiEx)
 This is a catch-all cgi function. It takes the url passed to it, looks up the corresponding path in the filesystem and if it exists, sends the file. This simulates what a normal webserver would do with static files.  If the file is not found, (or if http method is not GET) this cgi function returns NOT_FOUND, and then other cgi functions specified later in the routing table can try.  See the example projects for an implementation that uses this function call.  [FreeRTOS Example](https://github.com/chmorgan/esphttpd-freertos)
@@ -430,22 +393,6 @@ This will result in a page stating *Welcome, John Doe, to the ESP8266/ESP32 webs
 ## Websocket functionality
 
 ToDo: document this
-
-# Linux support
-
-Lwip provides a POSIX interface that matches that of a Linux system. FreeRTOS primitives are also similiar
-to those provided under POSIX.
-
-Running	on a Linux system enables testing under a range of different conditions including different
-native pointer sizes (64bit vs.	32bit),	as well	as with	different compilers. These differences can
-help reveal portability issues.
-
-Linux tools such as valgrind can be used to check for memory leaks that would be much more difficult
-to detect on an	embedded platform. Valgrind and	other tools also provide ways of looking at application
-performance that go beyond what	is typically available in an embedded environment.
-
-See https://github.com/chmorgan/libesphttpd_linux_example for an example of how to use libesphttpd under
-Linux.
 
 # Licensing
 

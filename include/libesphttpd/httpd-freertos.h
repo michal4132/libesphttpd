@@ -1,50 +1,56 @@
-#pragma once
+#ifndef __HTTPD_FREERTOS_H__
+#define __HTTPD_FREERTOS_H__
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/timers.h"
 
 #include "httpd.h"
-
-#ifdef FREERTOS
-#if defined(ESP8266) || defined(ESP32)
 #include "lwip/sockets.h"
-#else
-#include "lwip/lwip/sockets.h"
-#endif
-#endif // #ifdef FREERTOS
 
 #ifdef CONFIG_ESPHTTPD_SSL_SUPPORT
 #include <openssl/ssl.h>
-#ifdef linux
-#include <openssl/err.h>
-#endif
 #endif
 
-#ifdef linux
-#include <netinet/in.h>
-#endif
-
-
-#ifdef linux
-    #define PLAT_RETURN void*
-#else
-    #define PLAT_RETURN void
-#endif
+#define PLAT_RETURN void
 
 #ifdef __cplusplus
-extern "C" {
+    extern "C" {
 #endif
 
 struct RtosConnType{
-	int fd;
-	int needWriteDoneNotif;
-	int needsClose;
-	int port;
-	char ip[4];
+    int fd;
+    int needWriteDoneNotif;
+    int needsClose;
+    int port;
+    char ip[4];
 #ifdef CONFIG_ESPHTTPD_SSL_SUPPORT
-	SSL *ssl;
+    SSL *ssl;
 #endif
 
-	// server connection data structure
-	HttpdConnData connData;
+    // server connection data structure
+    HttpdConnData connData;
 };
+
+typedef struct RtosConnType RtosConnType;
+typedef RtosConnType* ConnTypePtr;
+typedef TimerHandle_t HttpdPlatTimerHandle;
+
+int httpdPlatSendData(HttpdInstance *pInstance, HttpdConnData *pConn, char *buff, int len);
+
+void httpdPlatDisconnect(HttpdConnData *ponn);
+void httpdPlatDisableTimeout(HttpdConnData *pConn);
+
+void httpdPlatLock(HttpdInstance *pInstance);
+void httpdPlatUnlock(HttpdInstance *pInstance);
+
+HttpdPlatTimerHandle httpdPlatTimerCreate(const char *name, int periodMs, int autoreload, void (*callback)(void *arg), void *ctx);
+void httpdPlatTimerStart(HttpdPlatTimerHandle timer);
+void httpdPlatTimerStop(HttpdPlatTimerHandle timer);
+void httpdPlatTimerDelete(HttpdPlatTimerHandle timer);
+
+#ifdef CONFIG_ESPHTTPD_SHUTDOWN_SUPPORT
+void httpdPlatShutdown(HttpdInstance *pInstance);
+#endif
 
 #define RECV_BUF_SIZE 2048
 
@@ -57,19 +63,15 @@ typedef struct
     HttpdFlags httpdFlags;
 
 #ifdef CONFIG_ESPHTTPD_SHUTDOWN_SUPPORT
-	int udpShutdownPort;
+    int udpShutdownPort;
 #endif
 
-	bool isShutdown;
+    bool isShutdown;
 
-	// storage for data read in the main loop
-	char precvbuf[RECV_BUF_SIZE];
+    // storage for data read in the main loop
+    char precvbuf[RECV_BUF_SIZE];
 
-#ifdef linux
-    pthread_mutex_t httpdMux;
-#else
     xQueueHandle httpdMux;
-#endif
 
 #ifdef CONFIG_ESPHTTPD_SSL_SUPPORT
     SSL_CTX *ctx;
@@ -133,8 +135,8 @@ HttpdInitStatus httpdFreertosInitEx(HttpdFreertosInstance *pInstance,
 
 typedef enum
 {
-	StartSuccess,
-	StartFailedSslNotConfigured
+    StartSuccess,
+    StartFailedSslNotConfigured
 } HttpdStartStatus;
 
 /**
@@ -188,4 +190,6 @@ void httpdFreertosSslAddClientCertificate(HttpdFreertosInstance *pInstance,
                                           const void *certificate, size_t certificate_size);
 #ifdef __cplusplus
 } /* extern "C" */
+#endif
+
 #endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __ROUTE_H__
+#define __ROUTE_H__
 
 #include "cgiredirect.h"
 
@@ -41,3 +42,5 @@
 #define ROUTE_FILESYSTEM()                         ROUTE_CGI("*", cgiEspFsHook)
 
 #define ROUTE_END() {NULL, NULL, NULL, NULL}
+
+#endif

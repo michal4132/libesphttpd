@@ -1,5 +1,5 @@
-#ifndef _KREF_H_
-#define _KREF_H_
+#ifndef __KREF_H__
+#define __KREF_H__
 
 #include <stdint.h>
 #include <stdatomic.h>
@@ -18,21 +18,18 @@ struct kref {
     atomic_int count;
 };
 
-static inline void kref_init(struct kref *kref)
-{
+static inline void kref_init(struct kref *kref) {
     atomic_init(&(kref->count), 1);
 }
 
-static inline void kref_get(struct kref *kref)
-{
+static inline void kref_get(struct kref *kref) {
     int old;
 
     old = atomic_fetch_add(&(kref->count), 1);
     configASSERT(old >= 1);
 }
 
-static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref))
-{
+static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)) {
     int result;
     int old;
 
@@ -51,4 +48,4 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
     return result;
 }
 
-#endif /* _KREF_H_ */
+#endif /* __KREF_H__ */

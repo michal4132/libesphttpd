@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __CGIREDIRECT_H__
+#define __CGIREDIRECT_H__
 
 #include "httpd.h"
 
@@ -28,3 +29,5 @@ CgiStatus cgiRedirect(HttpdConnData *connData);
 CgiStatus cgiRedirectToHostname(HttpdConnData *connData);
 
 CgiStatus cgiRedirectApClientToHostname(HttpdConnData *connData);
+
+#endif

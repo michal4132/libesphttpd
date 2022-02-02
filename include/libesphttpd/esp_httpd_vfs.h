@@ -1,5 +1,5 @@
-#ifndef ESP32_HTTPD_VFS_H
-#define ESP32_HTTPD_VFS_H
+#ifndef __ESP32_HTTPD_VFS_H__
+#define __ESP32_HTTPD_VFS_H__
 
 #include "httpd.h"
 

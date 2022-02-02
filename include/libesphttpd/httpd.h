@@ -20,7 +20,7 @@ extern "C" {
  */
 
 
-#define HTTPDVER "0.5"
+#define HTTPDVER "0.6"
 
 //Max length of request head. This is statically allocated for each connection.
 #ifndef HTTPD_MAX_HEAD_LEN

@@ -3,15 +3,12 @@ set (libesphttpd_SOURCES "core/auth.c"
                          "core/httpd.c"
                          "core/sha1.c"
                          "core/libesphttpd_base64.c"
-                         "util/captdns.c"
                          "util/cgiflash.c"
                          "util/cgiredirect.c"
                          "util/cgiwebsocket.c"
-                         "util/cgiwifi.c"
                          "util/cgiredirect.c"
                          "util/esp32_flash.c"
-                         "util/esp_httpd_vfs.c"
-                         "util/esp32_wifi.c")
+                         "util/esp_httpd_vfs.c" )
 
 set (libesphttpd_PRIV_INCLUDE_DIRS "core"
                                    "util")

@@ -1,5 +1,5 @@
-#ifndef AUTH_H
-#define AUTH_H
+#ifndef __AUTH_H__
+#define __AUTH_H__
 
 #include "httpd.h"
 
@@ -17,6 +17,6 @@
 //has.
 typedef int (* AuthGetUserPw)(HttpdConnData *connData, int no, char *user, int userLen, char *pass, int passLen);
 
-CgiStatus ICACHE_FLASH_ATTR authBasic(HttpdConnData *connData);
+CgiStatus authBasic(HttpdConnData *connData);
 
 #endif

@@ -8,18 +8,16 @@ Http server - core routines
 
 /* Copyright 2017 Jeroen Domburg <git@j0h.nl> */
 /* Copyright 2017 Chris Morgan <chmorgan@gmail.com> */
+/* Copyright 2022 Michał Bogdziewicz <michal@bogdziewicz.xyz> */
 
 
-#ifdef linux
-#include <libesphttpd/linux.h>
-#else
 #include <libesphttpd/esp.h>
-#endif
 
 #include <strings.h>
+#include <stdio.h>
 
+#include "libesphttpd/httpd-freertos.h"
 #include "libesphttpd/httpd.h"
-#include "httpd-platform.h"
 
 #include "esp_log.h"
 
@@ -47,7 +45,7 @@ typedef struct {
 
 //The mappings from file extensions to mime types. If you need an extra mime type,
 //add it here.
-static const ICACHE_RODATA_ATTR MimeMap mimeTypes[]={
+static const MimeMap mimeTypes[] = {
     {"htm", "text/html"},
     {"html", "text/html"},
     {"css", "text/css"},
@@ -63,7 +61,7 @@ static const ICACHE_RODATA_ATTR MimeMap mimeTypes[]={
 };
 
 //Returns a static char* to a mime type for a given url to a file.
-const char ICACHE_FLASH_ATTR *httpdGetMimetype(const char *url) {
+const char *httpdGetMimetype(const char *url) {
     char *urlp = (char*)url;
     int i=0;
     //Go find the extension
@@ -92,7 +90,7 @@ void httpdAddCacheHeaders(HttpdConnData *connData, const char *mime)
 }
 
 //Retires a connection for re-use
-static void ICACHE_FLASH_ATTR httpdRetireConn(HttpdInstance *pInstance, HttpdConnData *conn) {
+static void MEM_ATTR httpdRetireConn(HttpdInstance *pInstance, HttpdConnData *conn) {
 #ifdef CONFIG_ESPHTTPD_BACKLOG_SUPPORT
     if (conn->priv.sendBacklog!=NULL) {
         HttpSendBacklogItem *i, *j;
@@ -105,22 +103,21 @@ static void ICACHE_FLASH_ATTR httpdRetireConn(HttpdInstance *pInstance, HttpdCon
     }
 #endif
 
-    if (conn->post.buff)
-    {
+    if (conn->post.buff) {
         free(conn->post.buff);
         conn->post.buff = NULL;
     }
 }
 
 //Stupid li'l helper function that returns the value of a hex char.
-static int ICACHE_FLASH_ATTR  httpdHexVal(char c) {
+static int MEM_ATTR httpdHexVal(char c) {
     if (c>='0' && c<='9') return c-'0';
     if (c>='A' && c<='F') return c-'A'+10;
     if (c>='a' && c<='f') return c-'a'+10;
     return 0;
 }
 
-bool ICACHE_FLASH_ATTR httpdUrlDecode(const char *val, int valLen, char *ret, int retLen, int* bytesWritten) {
+bool MEM_ATTR httpdUrlDecode(const char *val, int valLen, char *ret, int retLen, int* bytesWritten) {
     int s=0; // index of theread position in val
     int d=0; // index of the write position in 'ret'
     int esced=0, escVal=0;
@@ -155,7 +152,7 @@ bool ICACHE_FLASH_ATTR httpdUrlDecode(const char *val, int valLen, char *ret, in
 //zero-terminated result is written in buff, with at most buffLen bytes used. The
 //function returns the length of the result, or -1 if the value wasn't found. The
 //returned string will be urldecoded already.
-int ICACHE_FLASH_ATTR httpdFindArg(const char *line, const char *arg, char *buff, int buffLen) {
+int httpdFindArg(const char *line, const char *arg, char *buff, int buffLen) {
     const char *p, *e;
     if (line==NULL) return -1;
     const int arglen = strlen(arg);
@@ -166,8 +163,7 @@ int ICACHE_FLASH_ATTR httpdFindArg(const char *line, const char *arg, char *buff
             e=(char*)strstr(p, "&");
             if (e==NULL) e=p+strlen(p);
             int bytesWritten;
-            if(!httpdUrlDecode(p, (e-p), buff, buffLen, &bytesWritten))
-            {
+            if(!httpdUrlDecode(p, (e-p), buff, buffLen, &bytesWritten)) {
                 //TODO: proper error return through this code path
                 ESP_LOGE(TAG, "out of space storing url");
             }
@@ -180,7 +176,7 @@ int ICACHE_FLASH_ATTR httpdFindArg(const char *line, const char *arg, char *buff
     return -1; //not found
 }
 
-bool ICACHE_FLASH_ATTR httpdGetHeader(HttpdConnData *conn, const char *header, char *ret, int retLen) {
+bool MEM_ATTR httpdGetHeader(HttpdConnData *conn, const char *header, char *ret, int retLen) {
     bool retval = false;
 
     char *p=conn->priv.head;
@@ -210,7 +206,7 @@ bool ICACHE_FLASH_ATTR httpdGetHeader(HttpdConnData *conn, const char *header, c
     return retval;
 }
 
-void ICACHE_FLASH_ATTR httpdSetTransferMode(HttpdConnData *conn, TransferModes mode) {
+void MEM_ATTR httpdSetTransferMode(HttpdConnData *conn, TransferModes mode) {
     if (mode==HTTPD_TRANSFER_CLOSE) {
         conn->priv.flags&=~HFL_CHUNKED;
         conn->priv.flags&=~HFL_NOCONNECTIONSTR;
@@ -224,7 +220,7 @@ void ICACHE_FLASH_ATTR httpdSetTransferMode(HttpdConnData *conn, TransferModes m
 }
 
 //Start the response headers.
-void ICACHE_FLASH_ATTR httpdStartResponse(HttpdConnData *conn, int code) {
+void MEM_ATTR httpdStartResponse(HttpdConnData *conn, int code) {
     char buff[128];
     int l;
     const char *connStr="Connection: close\r\n";
@@ -234,8 +230,7 @@ void ICACHE_FLASH_ATTR httpdStartResponse(HttpdConnData *conn, int code) {
                 (conn->priv.flags&HFL_HTTP11)?1:0,
                 code,
                 connStr);
-    if(l >= sizeof(buff))
-    {
+    if(l >= sizeof(buff)) {
         ESP_LOGE(TAG, "buff[%zu] too small", sizeof(buff));
     }
     httpdSend(conn, buff, l);
@@ -248,7 +243,7 @@ void ICACHE_FLASH_ATTR httpdStartResponse(HttpdConnData *conn, int code) {
 }
 
 //Send a http header.
-void ICACHE_FLASH_ATTR httpdHeader(HttpdConnData *conn, const char *field, const char *val) {
+void MEM_ATTR httpdHeader(HttpdConnData *conn, const char *field, const char *val) {
     httpdSend(conn, field, -1);
     httpdSend(conn, ": ", -1);
     httpdSend(conn, val, -1);
@@ -256,13 +251,13 @@ void ICACHE_FLASH_ATTR httpdHeader(HttpdConnData *conn, const char *field, const
 }
 
 //Finish the headers.
-void ICACHE_FLASH_ATTR httpdEndHeaders(HttpdConnData *conn) {
+void MEM_ATTR httpdEndHeaders(HttpdConnData *conn) {
     httpdSend(conn, "\r\n", -1);
     conn->priv.flags|=HFL_SENDINGBODY;
 }
 
 //Redirect to the given URL.
-void ICACHE_FLASH_ATTR httpdRedirect(HttpdConnData *conn, const char *newUrl) {
+void httpdRedirect(HttpdConnData *conn, const char *newUrl) {
     httpdStartResponse(conn, 302);
     httpdHeader(conn, "Location", newUrl);
     httpdEndHeaders(conn);
@@ -271,10 +266,9 @@ void ICACHE_FLASH_ATTR httpdRedirect(HttpdConnData *conn, const char *newUrl) {
 }
 
 //Used to spit out a 404 error
-static CgiStatus ICACHE_FLASH_ATTR cgiNotFound(HttpdConnData *connData) {
+static CgiStatus cgiNotFound(HttpdConnData *connData) {
     if (connData->isConnectionClosed) return HTTPD_CGI_DONE;
-    if (connData->post.received == connData->post.len)
-    {
+    if (connData->post.received == connData->post.len) {
         httpdStartResponse(connData, 404);
         httpdEndHeaders(connData);
         httpdSend(connData, "404 File not found.", -1);
@@ -289,11 +283,10 @@ static const int CHUNK_SIZE_TEXT_LEN = 6; // number of characters in CHUNK_SIZE_
 //Add data to the send buffer. len is the length of the data. If len is -1
 //the data is seen as a C-string.
 //Returns 1 for success, 0 for out-of-memory.
-int ICACHE_FLASH_ATTR httpdSend(HttpdConnData *conn, const char *data, int len) {
+int MEM_ATTR httpdSend(HttpdConnData *conn, const char *data, int len) {
     if (len<0) len=strlen(data);
     if (len==0) return 0;
-    if (conn->priv.flags&HFL_CHUNKED && conn->priv.flags&HFL_SENDINGBODY && conn->priv.chunkHdr==NULL)
-    {
+    if (conn->priv.flags&HFL_CHUNKED && conn->priv.flags&HFL_SENDINGBODY && conn->priv.chunkHdr==NULL) {
         if (conn->priv.sendBuffLen+len+CHUNK_SIZE_TEXT_LEN > HTTPD_SENDBUFF_MAX_FILL) return 0;
 
         // Establish start of chunk
@@ -310,8 +303,7 @@ int ICACHE_FLASH_ATTR httpdSend(HttpdConnData *conn, const char *data, int len) 
     return 1;
 }
 
-static char ICACHE_FLASH_ATTR httpdHexNibble(int val)
-{
+static char httpdHexNibble(int val) {
     val&=0xf;
     if (val<10) return '0'+val;
     return 'A'+(val-10);
@@ -320,23 +312,20 @@ static char ICACHE_FLASH_ATTR httpdHexNibble(int val)
 #define httpdSend_orDie(conn, data, len) do { if (!httpdSend((conn), (data), (len))) return false; } while (0)
 
 /* encode for HTML. returns 0 or 1 - 1 = success */
-int ICACHE_FLASH_ATTR httpdSend_html(HttpdConnData *conn, const char *data, int len)
-{
+int httpdSend_html(HttpdConnData *conn, const char *data, int len) {
     int start = 0, end = 0;
     char c;
     if (len < 0) len = (int) strlen(data);
     if (len==0) return 0;
 
-    for (end = 0; end < len; end++)
-    {
+    for (end = 0; end < len; end++) {
         c = data[end];
         if (c == 0) {
             // we found EOS
             break;
         }
 
-        if (c == '"' || c == '\'' || c == '<' || c == '>')
-        {
+        if (c == '"' || c == '\'' || c == '<' || c == '>') {
             if (start < end) httpdSend_orDie(conn, data + start, end - start);
             start = end + 1;
         }
@@ -352,18 +341,15 @@ int ICACHE_FLASH_ATTR httpdSend_html(HttpdConnData *conn, const char *data, int 
 }
 
 /* encode for JS. returns 0 or 1 - 1 = success */
-int ICACHE_FLASH_ATTR httpdSend_js(HttpdConnData *conn, const char *data, int len)
-{
+int httpdSend_js(HttpdConnData *conn, const char *data, int len) {
     int start = 0, end = 0;
     char c;
     if (len < 0) len = (int) strlen(data);
     if (len==0) return 0;
 
-    for (end = 0; end < len; end++)
-    {
+    for (end = 0; end < len; end++) {
         c = data[end];
-        if (c == 0)
-        {
+        if (c == 0) {
             // we found EOS
             break;
         }
@@ -389,8 +375,7 @@ int ICACHE_FLASH_ATTR httpdSend_js(HttpdConnData *conn, const char *data, int le
 //Function to send any data in conn->priv.sendBuff. Do not use in CGIs unless you know what you
 //are doing! Also, if you do set conn->cgi to NULL to indicate the connection is closed, do it BEFORE
 //calling this.
-void ICACHE_FLASH_ATTR httpdFlushSendBuffer(HttpdInstance *pInstance, HttpdConnData *conn)
-{
+void MEM_ATTR httpdFlushSendBuffer(HttpdInstance *pInstance, HttpdConnData *conn) {
     int r, len;
     if (conn->priv.chunkHdr!=NULL) {
         //We're sending chunked data, and the chunk needs fixing up.
@@ -416,19 +401,16 @@ void ICACHE_FLASH_ATTR httpdFlushSendBuffer(HttpdInstance *pInstance, HttpdConnD
         conn->priv.chunkHdr=NULL;
     }
     if (conn->priv.flags&HFL_CHUNKED && conn->priv.flags&HFL_SENDINGBODY && conn->cgi==NULL) {
-        if(conn->priv.sendBuffLen + 5 <= HTTPD_SENDBUFF_SIZE)
-        {
+        if(conn->priv.sendBuffLen + 5 <= HTTPD_SENDBUFF_SIZE) {
             //Connection finished sending whatever needs to be sent. Add NULL chunk to indicate this.
             strcpy(&conn->priv.sendBuff[conn->priv.sendBuffLen], "0\r\n\r\n");
             conn->priv.sendBuffLen+=5;
             assert(conn->priv.sendBuffLen <= HTTPD_SENDBUFF_SIZE);
-        } else
-        {
+        } else {
             ESP_LOGE(TAG, "sendBuff full");
         }
     }
-    if (conn->priv.sendBuffLen!=0)
-    {
+    if (conn->priv.sendBuffLen!=0) {
         r = httpdPlatSendData(pInstance, conn, conn->priv.sendBuff, conn->priv.sendBuffLen);
         if (r != conn->priv.sendBuffLen) {
 #ifdef CONFIG_ESPHTTPD_BACKLOG_SUPPORT
@@ -462,11 +444,10 @@ void ICACHE_FLASH_ATTR httpdFlushSendBuffer(HttpdInstance *pInstance, HttpdConnD
     }
 }
 
-void ICACHE_FLASH_ATTR httpdCgiIsDone(HttpdInstance *pInstance, HttpdConnData *conn) {
+void MEM_ATTR httpdCgiIsDone(HttpdInstance *pInstance, HttpdConnData *conn) {
     conn->cgi=NULL; //no need to call this anymore
 
-    if (conn->priv.flags&HFL_CHUNKED)
-    {
+    if (conn->priv.flags&HFL_CHUNKED) {
         ESP_LOGD(TAG, "cleaning up");
         httpdFlushSendBuffer(pInstance, conn);
         //Note: Do not clean up sendBacklog, it may still contain data at this point.
@@ -486,13 +467,13 @@ void ICACHE_FLASH_ATTR httpdCgiIsDone(HttpdInstance *pInstance, HttpdConnData *c
 
 //Callback called when the data on a socket has been successfully
 //sent.
-CallbackStatus ICACHE_FLASH_ATTR httpdSentCb(HttpdInstance *pInstance, HttpdConnData *pConn) {
+CallbackStatus MEM_ATTR httpdSentCb(HttpdInstance *pInstance, HttpdConnData *pConn) {
     return httpdContinue(pInstance, pConn);
 }
 
 //Can be called after a CGI function has returned HTTPD_CGI_MORE to
 //resume handling an open connection asynchronously
-CallbackStatus ICACHE_FLASH_ATTR httpdContinue(HttpdInstance *pInstance, HttpdConnData * conn) {
+CallbackStatus httpdContinue(HttpdInstance *pInstance, HttpdConnData * conn) {
     int r;
     httpdPlatLock(pInstance);
     CallbackStatus status = CallbackSuccess;
@@ -502,8 +483,7 @@ CallbackStatus ICACHE_FLASH_ATTR httpdContinue(HttpdInstance *pInstance, HttpdCo
         //We have some backlog to send first.
         HttpSendBacklogItem *next=conn->priv.sendBacklog->next;
         int bytesWritten = httpdPlatSendData(pInstance, conn->conn, conn->priv.sendBacklog->data, conn->priv.sendBacklog->len);
-        if(bytesWritten != conn->priv.sendBacklog->len)
-        {
+        if(bytesWritten != conn->priv.sendBacklog->len) {
             ESP_LOGE(TAG, "tried to write %d bytes, wrote %d", conn->priv.sendBacklog->len, bytesWritten);
         }
         conn->priv.sendBacklogSize-=conn->priv.sendBacklog->len;
@@ -519,23 +499,18 @@ CallbackStatus ICACHE_FLASH_ATTR httpdContinue(HttpdInstance *pInstance, HttpdCo
         httpdPlatDisconnect(conn);
         status = CallbackSuccess;
         // NOTE: No need to call httpdFlushSendBuffer
-    } else
-    {
+    } else {
         //If we don't have a CGI function, there's nothing to do but wait for something from the client.
-        if (conn->cgi == NULL)
-        {
+        if (conn->cgi == NULL) {
             status = CallbackSuccess;
-        } else
-        {
+        } else {
             conn->priv.sendBuffLen = 0;
 
             r = conn->cgi(conn); //Execute cgi fn.
 
-            if (r==HTTPD_CGI_DONE)
-            {
+            if (r==HTTPD_CGI_DONE) {
                 // No special action for HTTPD_CGI_DONE
-            } else if(r==HTTPD_CGI_NOTFOUND || r==HTTPD_CGI_AUTHENTICATED)
-            {
+            } else if(r==HTTPD_CGI_NOTFOUND || r==HTTPD_CGI_AUTHENTICATED) {
                 ESP_LOGE(TAG, "CGI fn returned %d", r);
             }
 
@@ -557,19 +532,17 @@ CallbackStatus ICACHE_FLASH_ATTR httpdContinue(HttpdInstance *pInstance, HttpdCo
 //the result headers and data.
 //We need to find the CGI function to call, call it, and dependent on what it returns either
 //find the next cgi function, wait till the cgi data is sent or close up the connection.
-static void ICACHE_FLASH_ATTR httpdProcessRequest(HttpdInstance *pInstance, HttpdConnData *conn) {
+static void MEM_ATTR httpdProcessRequest(HttpdInstance *pInstance, HttpdConnData *conn) {
     int r;
     int i=0;
-    if (conn->url==NULL)
-    {
+    if (conn->url==NULL) {
         ESP_LOGE(TAG, "url = NULL");
         return; //Shouldn't happen
     }
 
 #ifdef CONFIG_ESPHTTPD_CORS_SUPPORT
     // CORS preflight, allow the token we received before
-    if (conn->requestType == HTTPD_METHOD_OPTIONS)
-    {
+    if (conn->requestType == HTTPD_METHOD_OPTIONS) {
         httpdStartResponse(conn, 200);
         httpdHeader(conn, "Access-Control-Allow-Headers", conn->priv.corsToken);
         httpdEndHeaders(conn);
@@ -581,8 +554,7 @@ static void ICACHE_FLASH_ATTR httpdProcessRequest(HttpdInstance *pInstance, Http
 #endif
 
     //See if we can find a CGI that's happy to handle the request.
-    while (1)
-    {
+    while (1) {
         //Look up URL in the built-in URL table.
         while (pInstance->builtInUrls[i].url!=NULL) {
             const HttpdBuiltInUrl *pUrl = &(pInstance->builtInUrls[i]);
@@ -590,8 +562,7 @@ static void ICACHE_FLASH_ATTR httpdProcessRequest(HttpdInstance *pInstance, Http
             const char* route = pUrl->url;
 
             //See if there's a literal match
-            if (strcmp(route, conn->url)==0)
-            {
+            if (strcmp(route, conn->url)==0) {
                 match = true;
             } else if(route[strlen(route)-1]=='*' &&
                         strncmp(route, conn->url, strlen(route)-1)==0)
@@ -644,7 +615,7 @@ static void ICACHE_FLASH_ATTR httpdProcessRequest(HttpdInstance *pInstance, Http
 }
 
 //Parse a line of header data and modify the connection data accordingly.
-static CallbackStatus ICACHE_FLASH_ATTR httpdParseHeader(char *h, HttpdConnData *conn) {
+static CallbackStatus MEM_ATTR httpdParseHeader(char *h, HttpdConnData *conn) {
     int i;
     char firstLine=0;
     CallbackStatus status = CallbackSuccess;
@@ -739,8 +710,7 @@ static CallbackStatus ICACHE_FLASH_ATTR httpdParseHeader(char *h, HttpdConnData 
         if (conn->post.buff==NULL) {
             ESP_LOGE(TAG, "malloc failed %d bytes", bufferSize);
             status = CallbackErrorMemory;
-        } else
-        {
+        } else {
             conn->post.buffLen=0;
         }
     } else if (strncasecmp(h, "Content-Type: ", 14)==0) {
@@ -773,7 +743,7 @@ static CallbackStatus ICACHE_FLASH_ATTR httpdParseHeader(char *h, HttpdConnData 
 
 //Make a connection 'live' so we can do all the things a cgi can do to it.
 //ToDo: Also make httpdRecvCb/httpdContinue use these?
-CallbackStatus ICACHE_FLASH_ATTR httpdConnSendStart(HttpdInstance *pInstance, HttpdConnData *conn) {
+CallbackStatus MEM_ATTR httpdConnSendStart(HttpdInstance *pInstance, HttpdConnData *conn) {
     CallbackStatus status;
     httpdPlatLock(pInstance);
 
@@ -784,13 +754,13 @@ CallbackStatus ICACHE_FLASH_ATTR httpdConnSendStart(HttpdInstance *pInstance, Ht
 }
 
 //Finish the live-ness of a connection. Always call this after httpdConnStart
-void ICACHE_FLASH_ATTR httpdConnSendFinish(HttpdInstance *pInstance, HttpdConnData *conn) {
+void MEM_ATTR httpdConnSendFinish(HttpdInstance *pInstance, HttpdConnData *conn) {
     httpdFlushSendBuffer(pInstance, conn);
     httpdPlatUnlock(pInstance);
 }
 
 //Callback called when there's data available on a socket.
-CallbackStatus ICACHE_FLASH_ATTR httpdRecvCb(HttpdInstance *pInstance, HttpdConnData *conn, char *data, unsigned short len) {
+CallbackStatus MEM_ATTR httpdRecvCb(HttpdInstance *pInstance, HttpdConnData *conn, char *data, unsigned short len) {
     int x, r;
     char *p, *e;
     CallbackStatus status = CallbackSuccess;
@@ -807,20 +777,15 @@ CallbackStatus ICACHE_FLASH_ATTR httpdRecvCb(HttpdInstance *pInstance, HttpdConn
     //>0: Need to receive post data
     //ToDo: See if we can use something more elegant for this.
 
-    for (x=0; x<len; x++)
-    {
-        if (conn->post.len<0) // This byte is a header byte
-        {
-            if (data[x]=='\n')
-            {
-                if(conn->priv.headPos < HTTPD_MAX_HEAD_LEN-1)
-                {
+    for (x=0; x<len; x++) {
+        if (conn->post.len<0) { // This byte is a header byte
+            if (data[x]=='\n') {
+                if(conn->priv.headPos < HTTPD_MAX_HEAD_LEN-1) {
                     //Compatibility with clients that send \n only: fake a \r in front of this.
                     if (conn->priv.headPos!=0 && conn->priv.head[conn->priv.headPos-1]!='\r') {
                         conn->priv.head[conn->priv.headPos++]='\r';
                     }
-                } else
-                {
+                } else {
                     ESP_LOGE(TAG, "adding newline request too long");
                     status = CallbackErrorMemory;
                     break;
@@ -828,11 +793,9 @@ CallbackStatus ICACHE_FLASH_ATTR httpdRecvCb(HttpdInstance *pInstance, HttpdConn
             }
 
             //ToDo: return http error code 431 (request header too long) if this happens
-            if (conn->priv.headPos < HTTPD_MAX_HEAD_LEN-1)
-            {
+            if (conn->priv.headPos < HTTPD_MAX_HEAD_LEN-1) {
                 conn->priv.head[conn->priv.headPos++]=data[x];
-            } else
-            {
+            } else {
                 ESP_LOGE(TAG, "request too long!");
                 status = CallbackErrorMemory;
                 break;
@@ -907,7 +870,7 @@ CallbackStatus ICACHE_FLASH_ATTR httpdRecvCb(HttpdInstance *pInstance, HttpdConn
 
 //The platform layer should ALWAYS call this function, regardless if the connection is closed by the server
 //or by the client.
-CallbackStatus ICACHE_FLASH_ATTR httpdDisconCb(HttpdInstance *pInstance, HttpdConnData *pConn) {
+CallbackStatus MEM_ATTR httpdDisconCb(HttpdInstance *pInstance, HttpdConnData *pConn) {
     httpdPlatLock(pInstance);
 
     ESP_LOGD(TAG, "Socket closed");
@@ -920,7 +883,7 @@ CallbackStatus ICACHE_FLASH_ATTR httpdDisconCb(HttpdInstance *pInstance, HttpdCo
 }
 
 
-void ICACHE_FLASH_ATTR httpdConnectCb(HttpdInstance *pInstance, HttpdConnData *pConn) {
+void MEM_ATTR httpdConnectCb(HttpdInstance *pInstance, HttpdConnData *pConn) {
     httpdPlatLock(pInstance);
 
     memset(pConn, 0, sizeof(HttpdConnData));
@@ -930,8 +893,7 @@ void ICACHE_FLASH_ATTR httpdConnectCb(HttpdInstance *pInstance, HttpdConnData *p
 }
 
 #ifdef CONFIG_ESPHTTPD_SHUTDOWN_SUPPORT
-void httpdShutdown(HttpdInstance *pInstance)
-{
+void httpdShutdown(HttpdInstance *pInstance) {
     httpdPlatShutdown(pInstance);
 }
 #endif

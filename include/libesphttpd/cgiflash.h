@@ -1,5 +1,5 @@
-#ifndef CGIFLASH_H
-#define CGIFLASH_H
+#ifndef __CGIFLASH_H__
+#define __CGIFLASH_H__
 
 #include "httpd.h"
 
